@@ -230,5 +230,34 @@ function upload(options) {
 	return pm;
 }
 
-module.exports = upload;
+function copy(options) {
+  let conf = options
+  if (conf.Bucket.indexOf('-') < 0) {
+    conf.Bucket = conf.Bucket + '-' + conf.AppId;
+  }
+  else if (!conf.AppId) {
+    conf.AppId = conf.Bucket.split('-')[1] || '';
+  }
+
+  let cacheId = [
+    conf.AppId,
+    conf.SecretId,
+    conf.SecretKey
+  ].join('____');
+  let cos = cosCache[cacheId];
+  if (!cos) {
+    cos = new $cos({
+      SecretId: conf.SecretId,
+      SecretKey: conf.SecretKey
+    });
+    cosCache[cacheId] = cos;
+  }
+
+  return new Promise((resolve, reject) => {
+    const {Bucket,Region,Key,CopySource} = conf
+    cos.sliceCopyFile( {Bucket,Region,Key,CopySource}, (err,data) => err? reject(err) : resolve(data) )
+  })
+}
+
+module.exports = {upload,copy}
 
